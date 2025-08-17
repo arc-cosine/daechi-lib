@@ -115,17 +115,31 @@ const server = http.createServer(async (req, res) => {
 <style>
 body { font-family: 'Inter', sans-serif; }
 .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); overflow-y:auto; }
-.modal-content { background:white; margin:5% auto; padding:24px; border-radius:12px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; }
+.modal-content { 
+  background:white; 
+  margin:5% auto; 
+  padding:16px; 
+  border-radius:16px; 
+  width:95%; 
+  max-width:400px; 
+  max-height:80vh; 
+  overflow-y:auto; 
+}
+@media (min-width:640px) { /* sm 이상 PC */
+  .modal-content { max-width:600px; }
+}
 .close-btn { cursor:pointer; font-size:24px; }
 .sidebar-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; }
-.sidebar { position:fixed; top:0; left:0; width:80%; max-width:400px; height:100%; background:white; padding:24px; transform:translateX(-100%); transition:transform 0.3s ease; }
+.sidebar { position:fixed; top:0; left:0; width:80%; max-width:320px; height:100%; background:white; padding:16px; transform:translateX(-100%); transition:transform 0.3s ease; }
+@media (min-width:640px) { .sidebar { max-width:400px; } }
 .sidebar.open { transform:translateX(0); }
 </style>
 </head>
 <body class="bg-gray-100">
+
 <header class="flex items-center justify-center bg-white shadow px-4 py-3 relative">
   <button id="menu-btn" class="text-2xl absolute left-4">☰</button>
-  <h1 class="text-lg font-bold cursor-pointer">도서 검색</h1>
+  <h1 class="text-lg sm:text-xl font-bold cursor-pointer">도서 검색</h1>
 </header>
 
 <div id="sidebar-overlay" class="sidebar-overlay">
@@ -138,20 +152,27 @@ body { font-family: 'Inter', sans-serif; }
   </div>
 </div>
 
-<main class="p-6">
-  <div class="container bg-white p-8 rounded-2xl shadow-xl w-full">
-    <div class="mb-6 flex space-x-2">
-      <input id="search-input" type="text" placeholder="검색어 입력 후 Enter" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-      <button id="search-button" class="bg-indigo-600 text-white px-4 rounded-lg">검색</button>
+<main class="p-4 sm:p-6">
+  <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
+    <!-- 검색 -->
+    <div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+      <input id="search-input" type="text" placeholder="검색어 입력 후 Enter"
+             class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full">
+      <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto">
+        검색
+      </button>
     </div>
+
     <div id="result-count" class="text-sm text-gray-600 mb-3"></div>
-    <div id="book-list" class="space-y-4"></div>
+    <div id="book-list" class="flex flex-col space-y-4 w-full"></div>
   </div>
+
   <div class="mt-8 py-4 text-center">
     <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">개발 : 한아린</p>
   </div>
 </main>
 
+<!-- 모달 -->
 <div id="book-modal" class="modal">
   <div class="modal-content">
     <div class="flex justify-between items-center mb-2">
@@ -161,9 +182,10 @@ body { font-family: 'Inter', sans-serif; }
         <span id="close-modal" class="close-btn">&times;</span>
       </div>
     </div>
-    <div id="modal-details" class="space-y-2"></div>
+    <div id="modal-details" class="space-y-2 text-sm"></div>
   </div>
 </div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -356,7 +378,7 @@ function renderBookDetails(book) {
             res.end(JSON.stringify([]));
         }
     }
-    // --- API: 상세 정보 ---
+    // — API: 상세 정보 —
     else if (parsedUrl.pathname === '/book-details') {
         const bookKey = parsedUrl.query.bookKey;
         try {
