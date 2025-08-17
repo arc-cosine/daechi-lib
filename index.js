@@ -172,8 +172,10 @@ const server = http.createServer(async (req, res) => {
   Made by 한아린 with 
   <strong id="heart" style="cursor:pointer;">❤️</strong>
 </p>
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p><br /><br />
         <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">도서는 최대 100권까지 한번에 조회 가능합니다.</p>
-        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p>
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">정확하지 않은 정보가 존재할 수 있습니다.</p>
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">공식 사이트가 아닌, 개인이 만든 사이트입니다.</p>
     </div>
 </main>
 <!-- 모달 -->
@@ -264,7 +266,6 @@ function renderBookDetails(book) {
         coverHtml = '<img src="' + book.coverUrl + '" class="w-32 h-40 object-cover rounded mb-2">';
     }
 
-    // 상태 색상 지정
     let statusColor = '';
     if (book.status?.includes("대출가능")) statusColor = 'text-green-500';
     else if (book.status?.includes("대출중")) statusColor = 'text-red-500';
@@ -275,14 +276,24 @@ function renderBookDetails(book) {
         + '<p><strong>출판사:</strong> ' + book.publisher + '</p>'
         + '<p><strong>ISBN:</strong> ' + book.isbn + '</p>'
         + '<p><strong>청구기호:</strong> ' + (book.callNo || '검색 기능을 사용하여 조회 가능합니다.') + '</p>'
-        + '<p><strong>상태:</strong> <span class="' + statusColor + '">' + book.status + '</span></p>'
-    if (book.pubYear !== "") html += '<p><strong>출판년도:</strong> ' + book.pubYear + '</p>';
+        + '<p><strong>상태:</strong> <span class="' + statusColor + '">' + book.status + '</span></p>';
+
+    if (book.pubYear !== "") html += '<p><strong>출판 연도:</strong> ' + book.pubYear + '</p>';
     if (book.count !== undefined) html += '<p><strong>권수:</strong> ' + book.count + '</p>';
-    if (book.returnPlanDate !== "") html += '<p><strong>반납예정일:</strong> ' + book.returnPlanDate + '</p>';
+    if (book.returnPlanDate !== "") html += '<p><strong>반납 예정일:</strong> ' + book.returnPlanDate + '</p>';
+
+    // 🔴 출판년도 경고 메시지
+ if (book.pubYear === "1999") {
+        html += '<p class="text-red-500 mt-2 text-sm">출간 연도가 1999년으로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
+    }else if (book.callNo === "999 999") {
+        html += '<p class="text-red-500 mt-2 text-sm">청구 기호가 999 999(임시용 번호)로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
+    }else if (book.callNo && book.callNo.includes("999")) {
+    html += '<p class="text-red-500 mt-2 text-sm">청구 기호에 999(임시용 번호)가 포함되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
+}
+
 
     return html;
 }
-
 
   async function loadPopularBooks() {
     bookList.innerHTML = '<p>불러오는 중...</p>';
