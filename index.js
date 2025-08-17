@@ -102,150 +102,154 @@ async function fetchPopularBooks() {
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
 
-    // HTML 페이지
+// HTML 페이지
     if (parsedUrl.pathname === '/') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(`<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>대치초 도서관</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body { font-family: 'Inter', sans-serif; }
-.modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); overflow-y:auto; }
-.modal-content { 
-  background:white; 
-  margin:5% auto; 
-  padding:16px; 
-  border-radius:16px; 
-  width:95%; 
-  max-width:400px; 
-  max-height:80vh; 
-  overflow-y:auto; 
-}
-@media (min-width:640px) { /* sm 이상 PC */
-  .modal-content { max-width:600px; }
-}
-.close-btn { cursor:pointer; font-size:24px; }
-.sidebar-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; }
-.sidebar { position:fixed; top:0; left:0; width:80%; max-width:320px; height:100%; background:white; padding:16px; transform:translateX(-100%); transition:transform 0.3s ease; }
-@media (min-width:640px) { .sidebar { max-width:400px; } }
-.sidebar.open { transform:translateX(0); }
-</style>
+    <meta charset="UTF-8">
+    <title>대치초 도서관</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); overflow-y:auto; }
+        .modal-content {
+            background:white;
+            margin:5% auto;
+            padding:16px;
+            border-radius:16px;
+            width:95%;
+            max-width:400px;
+            max-height:80vh;
+            overflow-y:auto;
+        }
+        @media (min-width:640px) { /* sm 이상 PC */
+            .modal-content { max-width:600px; }
+        }
+        .close-btn { cursor:pointer; font-size:24px; }
+        .sidebar-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; }
+        .sidebar { position:fixed; top:0; left:0; width:80%; max-width:320px; height:100%; background:white; padding:16px; transform:translateX(-100%); transition:transform 0.3s ease; }
+        @media (min-width:640px) { .sidebar { max-width:400px; } }
+        .sidebar.open { transform:translateX(0); }
+    </style>
 </head>
 <body class="bg-gray-100">
 
 <header class="flex items-center justify-center bg-white shadow px-4 py-3 relative">
-  <button id="menu-btn" class="text-2xl absolute left-4">☰</button>
-  <h1 class="text-lg sm:text-xl font-bold cursor-pointer">도서 검색</h1>
+    <button id="menu-btn" class="text-2xl absolute left-4">☰</button>
+    <h1 class="text-lg sm:text-xl font-bold cursor-pointer">대치초 도서관 통합 검색</h1>
 </header>
 
 <div id="sidebar-overlay" class="sidebar-overlay">
-  <div id="sidebar" class="sidebar">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold">최근 찜한 도서</h2>
-      <button id="close-sidebar" class="text-2xl">×</button>
+    <div id="sidebar" class="sidebar">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">최근 찜한 도서</h2>
+            <button id="close-sidebar" class="text-2xl">×</button>
+        </div>
+        <ul id="recent-favorites" class="space-y-3 text-sm text-gray-700 overflow-y-auto max-h-[70vh]"></ul>
     </div>
-    <ul id="recent-favorites" class="space-y-3 text-sm text-gray-700"></ul>
-  </div>
 </div>
 
 <main class="p-4 sm:p-6">
-  <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
-    <!-- 검색 -->
-    <div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-      <input id="search-input" type="text" placeholder="검색어 입력 후 Enter"
-             class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full">
-      <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto">
-        검색
-      </button>
+    <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
+        <!-- 검색 -->
+        <div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <input id="search-input" type="text" placeholder="검색어 입력 후 Enter"
+                   class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full">
+            <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto">
+                검색
+            </button>
+        </div>
+
+        <div id="result-count" class="text-sm text-gray-600 mb-3"></div>
+        <div id="book-list" class="flex flex-col space-y-4 w-full"></div>
     </div>
 
-    <div id="result-count" class="text-sm text-gray-600 mb-3"></div>
-    <div id="book-list" class="flex flex-col space-y-4 w-full"></div>
-  </div>
-
-  <div class="mt-8 py-4 text-center">
-    <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">개발 : 한아린</p>
-  </div>
+    <div class="mt-8 py-4 text-center">
+<p class="text-gray-400 text-sm opacity-50 select-none">
+  Made by 한아린 with 
+  <strong id="heart" style="cursor:pointer;">❤️</strong>
+</p>
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">도서는 최대 100권까지 한번에 조회 가능합니다.</p>
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p>
+    </div>
 </main>
-
 <!-- 모달 -->
 <div id="book-modal" class="modal">
-  <div class="modal-content">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-2xl font-bold">도서 상세 정보</h2>
-      <div class="flex items-center space-x-3">
-        <button id="favorite-btn" class="text-gray-400 text-2xl">♡</button>
-        <span id="close-modal" class="close-btn">&times;</span>
-      </div>
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-2xl font-bold">도서 상세 정보</h2>
+            <div class="flex items-center space-x-3">
+                <button id="favorite-btn" class="text-gray-400 text-2xl">♡</button>
+                <span id="close-modal" class="close-btn">&times;</span>
+            </div>
+        </div>
+        <div id="modal-details" class="space-y-2 text-sm"></div>
     </div>
-    <div id="modal-details" class="space-y-2 text-sm"></div>
-  </div>
 </div>
 
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const searchInput=document.getElementById('search-input');
-  const searchButton=document.getElementById('search-button');
-  const bookList=document.getElementById('book-list');
-  const modal=document.getElementById('book-modal');
-  const modalDetails=document.getElementById('modal-details');
-  const closeModal=document.getElementById('close-modal');
-  const favoriteBtn=document.getElementById('favorite-btn');
-  const recentFavorites=document.getElementById('recent-favorites');
-  const menuBtn=document.getElementById('menu-btn');
-  const sidebarOverlay=document.getElementById('sidebar-overlay');
-  const sidebar=document.getElementById('sidebar');
-  const closeSidebar=document.getElementById('close-sidebar');
-  const resultCount=document.getElementById('result-count');
-  const headerTitle=document.querySelector('header h1');
-  let currentBook=null;
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput=document.getElementById('search-input');
+        const searchButton=document.getElementById('search-button');
+        const bookList=document.getElementById('book-list');
+        const modal=document.getElementById('book-modal');
+        const modalDetails=document.getElementById('modal-details');
+        const closeModal=document.getElementById('close-modal');
+        const favoriteBtn=document.getElementById('favorite-btn');
+        const recentFavorites=document.getElementById('recent-favorites');
+        const menuBtn=document.getElementById('menu-btn');
+        const sidebarOverlay=document.getElementById('sidebar-overlay');
+        const sidebar=document.getElementById('sidebar');
+        const closeSidebar=document.getElementById('close-sidebar');
+        const resultCount=document.getElementById('result-count');
+        const headerTitle=document.querySelector('header h1');
+        let currentBook=null;
 
-  function getFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
-  function saveFavorites(favs){ localStorage.setItem('favorites',JSON.stringify(favs)); }
-  function updateFavoriteBtn(key){
-    let favs=getFavorites();
-    if(favs.find(b=>b.bookKey===key)){ favoriteBtn.textContent='❤️'; favoriteBtn.classList.add('text-red-500'); }
-    else{ favoriteBtn.textContent='🩶'; favoriteBtn.classList.remove('text-red-500'); }
-  }
-  function renderSidebar(){
-    const favs=getFavorites().reverse();
-    recentFavorites.innerHTML='';
-    if(favs.length===0){ recentFavorites.innerHTML='<li class="text-gray-400">없음</li>'; return; }
-    favs.forEach(b=>{
-      const li=document.createElement('li');
-      li.className='cursor-pointer hover:text-indigo-600';
-      li.textContent=b.title;
-      li.onclick=()=>{ showModal(b); sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
-      recentFavorites.appendChild(li);
-    });
-  }
+        function getFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
+        function saveFavorites(favs){ localStorage.setItem('favorites',JSON.stringify(favs)); }
+        function updateFavoriteBtn(key){
+            let favs=getFavorites();
+            if(favs.find(b=>b.bookKey===key)){ favoriteBtn.textContent='❤️'; favoriteBtn.classList.add('text-red-500'); }
+            else{ favoriteBtn.textContent='🩶'; favoriteBtn.classList.remove('text-red-500'); }
+        }
+        function renderSidebar(){
+            const favs=getFavorites().reverse();
+            recentFavorites.innerHTML='';
+            if(favs.length===0){ recentFavorites.innerHTML='<li class="text-gray-400">없음</li>'; return; }
+            favs.forEach(b=>{
+                const li=document.createElement('li');
+                li.className='cursor-pointer hover:text-indigo-600';
+                li.textContent=b.title;
+                li.onclick=()=>{ showModal(b); sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
+                recentFavorites.appendChild(li);
+            });
+        }
 
-  favoriteBtn.onclick=()=>{
-    if(!currentBook) return;
-    let favs=getFavorites();
-    const exists=favs.find(b=>b.bookKey===currentBook.bookKey);
-    if(exists) favs=favs.filter(b=>b.bookKey!==currentBook.bookKey);
-    else favs.push(currentBook);
-    saveFavorites(favs);
-    updateFavoriteBtn(currentBook.bookKey);
-    renderSidebar();
-  };
+        favoriteBtn.onclick=()=>{
+            if(!currentBook) return;
+            let favs=getFavorites();
+            const exists=favs.find(b=>b.bookKey===currentBook.bookKey);
+            if(exists) favs=favs.filter(b=>b.bookKey!==currentBook.bookKey);
+            else favs.push(currentBook);
+            saveFavorites(favs);
+            updateFavoriteBtn(currentBook.bookKey);
+            renderSidebar();
+        };
 
-  closeModal.onclick=()=>modal.style.display='none';
-  window.onclick=(e)=>{ if(e.target===modal) modal.style.display='none'; };
+        closeModal.onclick=()=>modal.style.display='none';
+        window.onclick=(e)=>{ if(e.target===modal) modal.style.display='none'; };
 
-  window.showModal = async function(book) {
-    currentBook = book;
-    modal.style.display = 'block';
-    modalDetails.innerHTML = '<p>불러오는 중...</p>';
-    updateFavoriteBtn(book.bookKey);
-    try {
-      const res = await fetch(\`/book-details?bookKey=\${book.bookKey}\`);
+        window.showModal = async function(book) {
+            currentBook = book;
+            modal.style.display = 'block';
+            modalDetails.innerHTML = '<p>불러오는 중...</p>';
+            updateFavoriteBtn(book.bookKey);
+            try {
+                const res = await fetch(\`/book-details?bookKey=\${book.bookKey}\`);
       const details = await res.json();
       const combined = { ...book, ...details.data };
       modalDetails.innerHTML = renderBookDetails(combined);
@@ -284,8 +288,8 @@ function renderBookDetails(book) {
     bookList.innerHTML = '<p>불러오는 중...</p>';
     resultCount.textContent = '';
 
-    const headerDiv = document.createElement('div'); 
-    headerDiv.className = 'mb-4'; 
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'mb-4';
     headerDiv.innerHTML = \`
       <h2 class="text-xl font-bold mb-1">이런 책은 어때요?</h2>
       <h5 class="text-sm text-gray-500">오늘의 인기 도서!</h5>
@@ -361,12 +365,17 @@ function renderBookDetails(book) {
   renderSidebar();
   loadPopularBooks();
 });
+  const heart = document.getElementById('heart');
+  heart.addEventListener('click', () => {
+    heart.textContent = '🩶'; // 회색 하트
+    heart.style.color = 'gray';
+  });
 </script>
 </body>
 </html>
-        `);
+`);
     }
-    // --- API: 검색 ---
+// --- API: 검색 ---
     else if (parsedUrl.pathname === '/books') {
         const keyword = parsedUrl.query.keyword || '';
         try {
@@ -378,7 +387,7 @@ function renderBookDetails(book) {
             res.end(JSON.stringify([]));
         }
     }
-    // — API: 상세 정보 —
+// — API: 상세 정보 —
     else if (parsedUrl.pathname === '/book-details') {
         const bookKey = parsedUrl.query.bookKey;
         try {
@@ -390,7 +399,7 @@ function renderBookDetails(book) {
             res.end(JSON.stringify({}));
         }
     }
-    // — API: 인기 도서 —
+// — API: 인기 도서 —
     else if (parsedUrl.pathname === '/popular') {
         try {
             const books = await fetchPopularBooks();
@@ -401,7 +410,7 @@ function renderBookDetails(book) {
             res.end(JSON.stringify([]));
         }
     }
-    // — 404 —
+// — 404 —
     else {
         res.writeHead(404);
         res.end('Not Found');
