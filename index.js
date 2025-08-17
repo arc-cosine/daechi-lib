@@ -1,26 +1,19 @@
+// index.js
 const http = require('http');
 const https = require('https');
 const url = require('url');
 
-// 정적으로 사용되는 API 요청 값들
 const commonPayload = {
-    "neisCode": ["B100000749"],
-    "provCode": "B10",
-    "schoolName": "서울대치초등학교",
-    "coverYn": "N",
-    "facet": "Y"
+    neisCode: ["B100000749"],
+    provCode: "B10",
+    schoolName: "서울대치초등학교",
+    coverYn: "N",
+    facet: "Y"
 };
 
-/**
- * 외부 API에 POST 요청을 보내어 도서 목록을 가져오는 함수.
- * async/await 패턴으로 리팩터링하여 코드 가독성을 높였습니다.
- *
- * @param {string} keyword - 검색할 도서명 키워드.
- * @returns {Promise<Array<Object>>} - 도서 목록 배열을 포함하는 Promise.
- */
+// --- 검색 도서 ---
 async function fetchBooks(keyword) {
-    const postData = JSON.stringify({ ...commonPayload, "searchKeyword": keyword });
-
+    const postData = JSON.stringify({ ...commonPayload, searchKeyword: keyword, page: "1", display: "100" });
     const options = {
         hostname: 'read365.edunet.net',
         port: 443,
@@ -35,39 +28,21 @@ async function fetchBooks(keyword) {
     return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
             let rawData = '';
-            res.on('data', (chunk) => {
-                rawData += chunk;
-            });
+            res.on('data', chunk => rawData += chunk);
             res.on('end', () => {
                 try {
-                    const parsedData = JSON.parse(rawData);
-                    if (parsedData.data && parsedData.data.bookList) {
-                        resolve(parsedData.data.bookList);
-                    } else {
-                        reject(new Error('데이터 형식이 올바르지 않습니다.'));
-                    }
-                } catch (e) {
-                    reject(e);
-                }
+                    const parsed = JSON.parse(rawData);
+                    resolve(parsed.data?.bookList || []);
+                } catch (e) { reject(e); }
             });
         });
-
-        req.on('error', (e) => {
-            reject(e);
-        });
-
+        req.on('error', reject);
         req.write(postData);
         req.end();
     });
 }
 
-/**
- * 특정 도서의 상세 상태 정보를 가져오는 함수.
- * GET 요청을 사용하여 상태 정보를 조회합니다.
- *
- * @param {string} bookKey - 도서의 고유 키.
- * @returns {Promise<Object>} - 도서 상태 정보를 포함하는 Promise.
- */
+// --- 도서 상세 정보 ---
 async function fetchBookDetails(bookKey) {
     const options = {
         hostname: 'read365.edunet.net',
@@ -79,286 +54,336 @@ async function fetchBookDetails(bookKey) {
     return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
             let rawData = '';
-            res.on('data', (chunk) => {
-                rawData += chunk;
-            });
+            res.on('data', chunk => rawData += chunk);
             res.on('end', () => {
                 try {
-                    const parsedData = JSON.parse(rawData);
-                    if (parsedData.data) {
-                        resolve(parsedData.data);
-                    } else {
-                        reject(new Error('상세 데이터 형식이 올바르지 않습니다.'));
-                    }
-                } catch (e) {
-                    reject(e);
-                }
+                    const parsed = JSON.parse(rawData);
+                    resolve(parsed);
+                } catch (e) { reject(e); }
             });
         });
-
-        req.on('error', (e) => {
-            reject(e);
-        });
-
+        req.on('error', reject);
         req.end();
     });
 }
 
-// 웹 서버 생성
+// --- 인기 도서 ---
+async function fetchPopularBooks() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}${mm}${dd}`;
+
+    const options = {
+        hostname: 'read365.edunet.net',
+        port: 443,
+        path: `/dls/api/school/popular?provCode=${commonPayload.provCode}&neisCode=${commonPayload.neisCode[0]}&searchDate=${todayStr}`,
+        method: 'GET'
+    };
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, res => {
+            let rawData = '';
+            res.on('data', chunk => rawData += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(rawData);
+                    resolve(parsed.data || []);
+                } catch (e) { reject(e); }
+            });
+        });
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+// --- 서버 ---
 const server = http.createServer(async (req, res) => {
-    // 요청 URL 파싱
     const parsedUrl = url.parse(req.url, true);
 
+    // HTML 페이지
     if (parsedUrl.pathname === '/') {
-        // 메인 페이지 HTML을 전송
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(`
-      <!DOCTYPE html>
-      <html lang="ko">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>도서 검색</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-              body { font-family: 'Inter', sans-serif; }
-              .modal {
-                  display: none;
-                  position: fixed;
-                  z-index: 100;
-                  left: 0;
-                  top: 0;
-                  width: 100%;
-                  height: 100%;
-                  overflow: auto;
-                  background-color: rgba(0,0,0,0.5);
-              }
-              .modal-content {
-                  position: relative;
-                  background-color: white;
-                  margin: 5% auto;
-                  padding: 24px;
-                  border-radius: 12px;
-                  width: 90%;
-                  max-width: 600px;
-                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                  animation-name: animatetop;
-                  animation-duration: 0.4s;
-              }
-              .close-btn {
-                  position: absolute;
-                  top: 10px;
-                  right: 20px;
-                  font-size: 24px;
-                  font-weight: bold;
-                  cursor: pointer;
-              }
-              .book-item:hover {
-                  background-color: #f3f4f6;
-              }
-              @keyframes animatetop {
-                  from { top: -300px; opacity: 0; }
-                  to { top: 0; opacity: 1; }
-              }
-          </style>
-      </head>
-      <body class="bg-gray-100 flex flex-col items-center p-8 min-h-screen">
-          <div class="container bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
-              <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">도서 검색</h1>
-              
-              <!-- 검색 입력 필드 -->
-              <div class="mb-6 flex items-center space-x-2">
-                  <input type="text" id="search-input" placeholder="검색어를 입력하고 Enter를 누르세요" 
-                         class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <button id="search-button" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200">검색</button>
-              </div>
+        res.end(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>대치초 도서관</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: 'Inter', sans-serif; }
+.modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); overflow-y:auto; }
+.modal-content { background:white; margin:5% auto; padding:24px; border-radius:12px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; }
+.close-btn { cursor:pointer; font-size:24px; }
+.sidebar-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; }
+.sidebar { position:fixed; top:0; left:0; width:80%; max-width:400px; height:100%; background:white; padding:24px; transform:translateX(-100%); transition:transform 0.3s ease; }
+.sidebar.open { transform:translateX(0); }
+</style>
+</head>
+<body class="bg-gray-100">
+<header class="flex items-center justify-center bg-white shadow px-4 py-3 relative">
+  <button id="menu-btn" class="text-2xl absolute left-4">☰</button>
+  <h1 class="text-lg font-bold cursor-pointer">도서 검색</h1>
+</header>
 
-              <div id="book-list" class="space-y-4">
-                  <!-- 도서 목록이 여기에 동적으로 추가됩니다 -->
-                  <p class="text-center text-gray-500">검색어를 입력하여 도서를 찾아보세요.</p>
-              </div>
-          </div>
+<div id="sidebar-overlay" class="sidebar-overlay">
+  <div id="sidebar" class="sidebar">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">최근 찜한 도서</h2>
+      <button id="close-sidebar" class="text-2xl">×</button>
+    </div>
+    <ul id="recent-favorites" class="space-y-3 text-sm text-gray-700"></ul>
+  </div>
+</div>
 
-          <!-- 모달 -->
-          <div id="book-modal" class="modal">
-              <div class="modal-content">
-                  <span id="close-modal" class="close-btn">&times;</span>
-                  <div id="modal-details" class="space-y-2">
-                      <!-- 도서 상세 정보가 여기에 추가됩니다 -->
-                  </div>
-              </div>
-          </div>
+<main class="p-6">
+  <div class="container bg-white p-8 rounded-2xl shadow-xl w-full">
+    <div class="mb-6 flex space-x-2">
+      <input id="search-input" type="text" placeholder="검색어 입력 후 Enter" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+      <button id="search-button" class="bg-indigo-600 text-white px-4 rounded-lg">검색</button>
+    </div>
+    <div id="result-count" class="text-sm text-gray-600 mb-3"></div>
+    <div id="book-list" class="space-y-4"></div>
+  </div>
+  <div class="mt-8 py-4 text-center">
+    <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">개발 : 한아린</p>
+  </div>
+</main>
 
-          <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const searchInput = document.getElementById('search-input');
-                const searchButton = document.getElementById('search-button');
-                const bookListDiv = document.getElementById('book-list');
-                const modal = document.getElementById('book-modal');
-                const modalDetails = document.getElementById('modal-details');
-                const closeModalBtn = document.getElementById('close-modal');
-                
-                // 검색 버튼 클릭 또는 Enter 키 입력 시 검색 실행
-                const handleSearch = () => {
-                    const keyword = searchInput.value.trim();
-                    if (keyword) {
-                        fetchBooksFromServer(keyword);
-                    } else {
-                        bookListDiv.innerHTML = '<p class="text-center text-gray-500">검색어를 입력해주세요.</p>';
-                    }
-                };
+<div id="book-modal" class="modal">
+  <div class="modal-content">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="text-2xl font-bold">도서 상세 정보</h2>
+      <div class="flex items-center space-x-3">
+        <button id="favorite-btn" class="text-gray-400 text-2xl">♡</button>
+        <span id="close-modal" class="close-btn">&times;</span>
+      </div>
+    </div>
+    <div id="modal-details" class="space-y-2"></div>
+  </div>
+</div>
 
-                searchButton.addEventListener('click', handleSearch);
-                searchInput.addEventListener('keypress', (event) => {
-                    if (event.key === 'Enter') {
-                        handleSearch();
-                    }
-                });
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput=document.getElementById('search-input');
+  const searchButton=document.getElementById('search-button');
+  const bookList=document.getElementById('book-list');
+  const modal=document.getElementById('book-modal');
+  const modalDetails=document.getElementById('modal-details');
+  const closeModal=document.getElementById('close-modal');
+  const favoriteBtn=document.getElementById('favorite-btn');
+  const recentFavorites=document.getElementById('recent-favorites');
+  const menuBtn=document.getElementById('menu-btn');
+  const sidebarOverlay=document.getElementById('sidebar-overlay');
+  const sidebar=document.getElementById('sidebar');
+  const closeSidebar=document.getElementById('close-sidebar');
+  const resultCount=document.getElementById('result-count');
+  const headerTitle=document.querySelector('header h1');
+  let currentBook=null;
 
-                // 모달 닫기 이벤트
-                closeModalBtn.onclick = () => {
-                    modal.style.display = 'none';
-                };
-                window.onclick = (event) => {
-                    if (event.target === modal) {
-                        modal.style.display = 'none';
-                    }
-                };
-                
-                // 모달에 상세 정보 표시하는 함수
-                async function showModal(book) {
-                    // 로딩 메시지 표시
-                    modalDetails.innerHTML = '<p class="text-center text-gray-500">상세 정보를 불러오는 중...</p>';
-                    modal.style.display = 'block';
+  function getFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
+  function saveFavorites(favs){ localStorage.setItem('favorites',JSON.stringify(favs)); }
+  function updateFavoriteBtn(key){
+    let favs=getFavorites();
+    if(favs.find(b=>b.bookKey===key)){ favoriteBtn.textContent='❤️'; favoriteBtn.classList.add('text-red-500'); }
+    else{ favoriteBtn.textContent='🩶'; favoriteBtn.classList.remove('text-red-500'); }
+  }
+  function renderSidebar(){
+    const favs=getFavorites().reverse();
+    recentFavorites.innerHTML='';
+    if(favs.length===0){ recentFavorites.innerHTML='<li class="text-gray-400">없음</li>'; return; }
+    favs.forEach(b=>{
+      const li=document.createElement('li');
+      li.className='cursor-pointer hover:text-indigo-600';
+      li.textContent=b.title;
+      li.onclick=()=>{ showModal(b); sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
+      recentFavorites.appendChild(li);
+    });
+  }
 
-                    try {
-                        // 서버에서 상세 정보 가져오기
-                        const response = await fetch(\`/book-details?bookKey=\${book.bookKey}\`);
-                        if (!response.ok) {
-                            throw new Error('상세 정보 네트워크 응답이 실패했습니다.');
-                        }
-                        const details = await response.json();
+  favoriteBtn.onclick=()=>{
+    if(!currentBook) return;
+    let favs=getFavorites();
+    const exists=favs.find(b=>b.bookKey===currentBook.bookKey);
+    if(exists) favs=favs.filter(b=>b.bookKey!==currentBook.bookKey);
+    else favs.push(currentBook);
+    saveFavorites(favs);
+    updateFavoriteBtn(currentBook.bookKey);
+    renderSidebar();
+  };
 
-                        // 모달 내용 초기화
-                        modalDetails.innerHTML = '';
-                        
-                        // 책 표지 이미지 표시
-                        if (details.coverUrl) {
-                            const coverImg = document.createElement('img');
-                            coverImg.src = details.coverUrl;
-                            coverImg.alt = '책 표지';
-                            coverImg.className = 'w-1/3 h-auto mx-auto my-4 rounded-lg shadow-md';
-                            modalDetails.appendChild(coverImg);
-                        }
+  closeModal.onclick=()=>modal.style.display='none';
+  window.onclick=(e)=>{ if(e.target===modal) modal.style.display='none'; };
 
-                        // 상세 정보 항목들 표시
-                        const combinedDetails = { ...book, ...details };
+  window.showModal = async function(book) {
+    currentBook = book;
+    modal.style.display = 'block';
+    modalDetails.innerHTML = '<p>불러오는 중...</p>';
+    updateFavoriteBtn(book.bookKey);
+    try {
+      const res = await fetch(\`/book-details?bookKey=\${book.bookKey}\`);
+      const details = await res.json();
+      const combined = { ...book, ...details.data };
+      modalDetails.innerHTML = renderBookDetails(combined);
+    } catch {
+      modalDetails.innerHTML = '<p class="text-red-500">불러오기 실패</p>';
+    }
+  };
 
-                        for (const [key, value] of Object.entries(combinedDetails)) {
-                            // 특정 키는 건너뛰기
-                            if (['bookKey', 'speciesKey', 'highlightTitle', 'highlightAuthor', 'highlightPublisher', 'coverUrl', 'coverYn'].includes(key)) {
-                                continue;
-                            }
-                            if (typeof value !== 'object' || value === null) {
-                                const detailElement = document.createElement('p');
-                                detailElement.innerHTML = \`<strong class="text-gray-700">\${key}:</strong> \${value}\`;
-                                modalDetails.appendChild(detailElement);
-                            } else {
-                                // 중첩된 객체 (kdcInfo, categoryInfo 등) 처리
-                                const nestedTitle = document.createElement('p');
-                                nestedTitle.className = 'font-semibold text-lg mt-4';
-                                nestedTitle.textContent = key;
-                                modalDetails.appendChild(nestedTitle);
-                                for (const [nestedKey, nestedValue] of Object.entries(value)) {
-                                    const nestedDetail = document.createElement('p');
-                                    nestedDetail.innerHTML = \`<strong class="text-gray-600">\${nestedKey}:</strong> \${nestedValue}\`;
-                                    modalDetails.appendChild(nestedDetail);
-                                }
-                            }
-                        }
+function renderBookDetails(book) {
+    let coverHtml = '';
+    if (book.coverYn === "Y" && book.coverUrl) {
+        coverHtml = '<img src="' + book.coverUrl + '" class="w-32 h-40 object-cover rounded mb-2">';
+    }
 
-                    } catch (error) {
-                        console.error('상세 정보를 가져오는 중 오류 발생:', error);
-                        modalDetails.innerHTML = \`<p class="text-center text-red-500">오류 발생: \${error.message}</p>\`;
-                    }
-                }
+    // 상태 색상 지정
+    let statusColor = '';
+    if (book.status?.includes("대출가능")) statusColor = 'text-green-500';
+    else if (book.status?.includes("대출중")) statusColor = 'text-red-500';
 
-                // 서버에서 도서 목록을 가져오는 함수
-                async function fetchBooksFromServer(keyword) {
-                    bookListDiv.innerHTML = '<p class="text-center text-gray-500">도서를 불러오는 중...</p>';
-                    try {
-                        const response = await fetch(\`/books?keyword=\${encodeURIComponent(keyword)}\`);
-                        if (!response.ok) {
-                            throw new Error('네트워크 응답이 실패했습니다.');
-                        }
-                        const books = await response.json();
-                        
-                        bookListDiv.innerHTML = '';
-                        if (books.length === 0) {
-                            bookListDiv.innerHTML = '<p class="text-center text-gray-500">검색 결과가 없습니다.</p>';
-                            return;
-                        }
+    let html = coverHtml
+        + '<p><strong>제목:</strong> ' + book.title + '</p>'
+        + '<p><strong>저자:</strong> ' + book.author + '</p>'
+        + '<p><strong>출판사:</strong> ' + book.publisher + '</p>'
+        + '<p><strong>ISBN:</strong> ' + book.isbn + '</p>'
+        + '<p><strong>청구기호:</strong> ' + (book.callNo || '검색 기능을 사용하여 조회 가능합니다.') + '</p>'
+        + '<p><strong>상태:</strong> <span class="' + statusColor + '">' + book.status + '</span></p>'
+    if (book.pubYear !== "") html += '<p><strong>출판년도:</strong> ' + book.pubYear + '</p>';
+    if (book.count !== undefined) html += '<p><strong>권수:</strong> ' + book.count + '</p>';
+    if (book.returnPlanDate !== "") html += '<p><strong>반납예정일:</strong> ' + book.returnPlanDate + '</p>';
 
-                        books.forEach(book => {
-                            const bookItem = document.createElement('div');
-                            bookItem.className = 'book-item cursor-pointer p-4 bg-gray-50 rounded-lg shadow-sm transition-colors duration-200';
-                            bookItem.innerHTML = \`<h2 class="text-lg font-semibold text-indigo-600">\${book.title}</h2>\`;
-                            bookItem.onclick = () => showModal(book);
-                            bookListDiv.appendChild(bookItem);
-                        });
+    return html;
+}
 
-                    } catch (error) {
-                        console.error('도서 정보를 가져오는 중 오류 발생:', error);
-                        bookListDiv.innerHTML = \`<p class="text-center text-red-500">오류 발생: \${error.message}</p>\`;
-                    }
-                }
-            });
-          </script>
-      </body>
-      </html>
-    `);
-    } else if (parsedUrl.pathname === '/books') {
+
+  async function loadPopularBooks() {
+    bookList.innerHTML = '<p>불러오는 중...</p>';
+    resultCount.textContent = '';
+
+    const headerDiv = document.createElement('div'); 
+    headerDiv.className = 'mb-4'; 
+    headerDiv.innerHTML = \`
+      <h2 class="text-xl font-bold mb-1">이런 책은 어때요?</h2>
+      <h5 class="text-sm text-gray-500">오늘의 인기 도서!</h5>
+    \`;
+    try {
+        const res = await fetch('/popular');
+        const books = await res.json();
+        bookList.innerHTML = '';
+        bookList.appendChild(headerDiv);
+        if (books.length === 0) {
+            bookList.innerHTML = '<p>추천 도서 없음</p>';
+            return;
+        }
+        books.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'book-item p-4 bg-gray-50 rounded-lg shadow-sm cursor-pointer';
+            div.innerHTML = '<h2 class="font-semibold">' + b.title + '</h2>'
+                          + '<p class="text-sm">' + b.author + '</p>'
+                          + '<p class="text-xs text-gray-500">상태 불러오는 중...</p>';
+            bookList.appendChild(div);
+            fetch('/book-details?bookKey=' + b.bookKey)
+              .then(res=>res.json())
+              .then(details=>{
+                  const statusP = div.querySelector("p.text-xs");
+                  if(details.status==="OK" && details.data?.status){ statusP.textContent="상태: "+details.data.status; }
+                  else{ statusP.textContent="상태: 알 수 없음"; }
+              }).catch(()=>{ div.querySelector("p.text-xs").textContent="상태: 오류"; });
+            div.onclick = ()=>showModal(b);
+        });
+    } catch {
+        bookList.innerHTML = '<p class="text-red-500">추천 도서 불러오기 실패</p>';
+    }
+  }
+
+  async function performSearch() {
+    const keyword = searchInput.value.trim();
+    if(!keyword) return;
+    bookList.innerHTML = '<p>검색 중...</p>';
+    resultCount.textContent = '';
+    try {
+        const res = await fetch('/books?keyword=' + encodeURIComponent(keyword));
+        const books = await res.json();
+        bookList.innerHTML = '';
+        resultCount.textContent = books.length + '건 검색 결과';
+        if(books.length===0){ bookList.innerHTML='<p>검색 결과가 없습니다.</p>'; return; }
+        books.forEach(b=>{
+            const div=document.createElement('div');
+            div.className='book-item p-4 bg-gray-50 rounded-lg shadow-sm cursor-pointer';
+            div.innerHTML='<h2 class="font-semibold">'+b.title+'</h2>'
+                        +'<p class="text-sm">'+b.author+'</p>'
+                        +'<p class="text-xs text-gray-500">상태 불러오는 중...</p>';
+            bookList.appendChild(div);
+            fetch('/book-details?bookKey='+b.bookKey)
+              .then(res=>res.json())
+              .then(details=>{
+                  const statusP = div.querySelector("p.text-xs");
+                  if(details.status==="OK" && details.data?.status){ statusP.textContent="상태: "+details.data.status; }
+                  else{ statusP.textContent="상태: 알 수 없음"; }
+              }).catch(()=>{ div.querySelector("p.text-xs").textContent="상태: 오류"; });
+            div.onclick = ()=>showModal(b);
+        });
+    } catch {
+        bookList.innerHTML='<p class="text-red-500">검색 실패</p>';
+    }
+  }
+
+  searchButton.onclick = performSearch;
+  searchInput.addEventListener('keypress', e=>{ if(e.key==='Enter') performSearch(); });
+  menuBtn.onclick=()=>{ sidebarOverlay.style.display='block'; setTimeout(()=>sidebar.classList.add('open'),10); };
+  closeSidebar.onclick=()=>{ sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
+  sidebarOverlay.onclick=(e)=>{ if(e.target===sidebarOverlay){ sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); } };
+  headerTitle.onclick=()=>{ searchInput.value=''; bookList.innerHTML=''; resultCount.textContent=''; loadPopularBooks(); };
+  renderSidebar();
+  loadPopularBooks();
+});
+</script>
+</body>
+</html>
+        `);
+    }
+    // --- API: 검색 ---
+    else if (parsedUrl.pathname === '/books') {
         const keyword = parsedUrl.query.keyword || '';
-        if (!keyword) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: '검색 키워드가 필요합니다.' }));
-            return;
-        }
-
         try {
-            const bookList = await fetchBooks(keyword);
+            const books = await fetchBooks(keyword);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(bookList));
-        } catch (err) {
-            console.error('Failed to fetch books:', err);
+            res.end(JSON.stringify(books));
+        } catch {
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Failed to fetch book data' }));
+            res.end(JSON.stringify([]));
         }
-    } else if (parsedUrl.pathname === '/book-details') {
+    }
+    // --- API: 상세 정보 ---
+    else if (parsedUrl.pathname === '/book-details') {
         const bookKey = parsedUrl.query.bookKey;
-        if (!bookKey) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Book key is required.' }));
-            return;
-        }
-
         try {
             const details = await fetchBookDetails(bookKey);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(details));
-        } catch (err) {
-            console.error('Failed to fetch book details:', err);
+        } catch {
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Failed to fetch book details' }));
+            res.end(JSON.stringify({}));
         }
-    } else {
-        // 존재하지 않는 URL 처리
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
+    }
+    // — API: 인기 도서 —
+    else if (parsedUrl.pathname === '/popular') {
+        try {
+            const books = await fetchPopularBooks();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(books));
+        } catch {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify([]));
+        }
+    }
+    // — 404 —
+    else {
+        res.writeHead(404);
         res.end('Not Found');
     }
 });
 
-const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
-});
+server.listen(3000, () => console.log("서버 실행: http://localhost:3000"));
