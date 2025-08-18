@@ -148,7 +148,13 @@ const server = http.createServer(async (req, res) => {
             <h2 class="text-xl font-bold">최근 찜한 도서</h2>
             <button id="close-sidebar" class="text-2xl">×</button>
         </div>
-        <ul id="recent-favorites" class="space-y-3 text-sm text-gray-700 overflow-y-auto max-h-[70vh]"></ul>
+<ul id="recent-favorites" class="space-y-3 text-sm text-gray-700 overflow-y-auto max-h-[70vh]"></ul>
+<div class="mt-4 text-center">
+  <button id="random-favorite" class="px-4 py-2 bg-indigo-600 text-white rounded-lg w-full">
+    랜덤 선택하기 🎲
+  </button>
+</div>
+
     </div>
 </div>
 
@@ -172,7 +178,7 @@ const server = http.createServer(async (req, res) => {
   Made by 한아린 with 
   <strong id="heart" style="cursor:pointer;">❤️</strong>
 </p>
-        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p><br /><br />
+        <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p>
         <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">도서는 최대 100권까지 한번에 조회 가능합니다.</p>
         <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">정확하지 않은 정보가 존재할 수 있습니다.</p>
         <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">공식 사이트가 아닌, 개인이 만든 사이트입니다.</p>
@@ -218,18 +224,38 @@ const server = http.createServer(async (req, res) => {
             if(favs.find(b=>b.bookKey===key)){ favoriteBtn.textContent='❤️'; favoriteBtn.classList.add('text-red-500'); }
             else{ favoriteBtn.textContent='🩶'; favoriteBtn.classList.remove('text-red-500'); }
         }
-        function renderSidebar(){
-            const favs=getFavorites().reverse();
-            recentFavorites.innerHTML='';
-            if(favs.length===0){ recentFavorites.innerHTML='<li class="text-gray-400">없음</li>'; return; }
-            favs.forEach(b=>{
-                const li=document.createElement('li');
-                li.className='cursor-pointer hover:text-indigo-600';
-                li.textContent=b.title;
-                li.onclick=()=>{ showModal(b); sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
-                recentFavorites.appendChild(li);
-            });
-        }
+function renderSidebar(){
+    const favs = getFavorites().reverse();
+    recentFavorites.innerHTML = '';
+    if(favs.length === 0){
+        recentFavorites.innerHTML = '<li class="text-gray-400">없음</li>';
+        return;
+    }
+    favs.forEach(b=>{
+        const li=document.createElement('li');
+        li.className='cursor-pointer hover:text-indigo-600';
+        li.textContent=b.title;
+        li.onclick=()=>{ 
+            showModal(b); 
+            sidebar.classList.remove('open'); 
+            setTimeout(()=>sidebarOverlay.style.display='none',300); 
+        };
+        recentFavorites.appendChild(li);
+    });
+}
+
+const randomBtn = document.getElementById('random-favorite');
+randomBtn.onclick = () => {
+    const favs = getFavorites();
+    if(favs.length === 0){
+        alert("찜한 도서가 없습니다!");
+        return;
+    }
+    const randomBook = favs[Math.floor(Math.random() * favs.length)];
+    showModal(randomBook);
+    sidebar.classList.remove('open');
+    setTimeout(()=>sidebarOverlay.style.display='none',300);
+};
 
         favoriteBtn.onclick=()=>{
             if(!currentBook) return;
