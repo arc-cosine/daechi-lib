@@ -10,7 +10,17 @@ const commonPayload = {
     coverYn: "N",
     facet: "Y"
 };
-
+// 이스터에그용 책
+const easterEggBook = {
+    bookKey: "1112",
+    title: "Who? 나나오아카리",
+    author: "한아린",
+    publisher: "다산어린이",
+    pubYear: "1995",
+    callNo: "770 770", // 상세보기 경고용
+    ISBN: "770770770770",
+    status: "앨범 구매 시 대출 가능",
+};
 // --- 검색 도서 ---
 async function fetchBooks(keyword) {
     const postData = JSON.stringify({ ...commonPayload, searchKeyword: keyword, page: "1", display: "100" });
@@ -296,7 +306,12 @@ function renderBookDetails(book) {
     if (book.status?.includes("대출가능")) statusColor = 'text-green-500';
     else if (book.status?.includes("대출중")) statusColor = 'text-red-500';
 
-    let html = coverHtml
+    if(book.author == "한아린"){
+    coverHtml = '<img src="' + "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOMIyiG8rYWw0euSokxfCqvHtCVYDH2Fz_9w&s"+ '" class="w-32 h-40 object-cover rounded mb-2">';
+    book.status = "앨범 구매 시 대출 가능"
+    book.isbn = "19951112770"
+    }
+  let html = coverHtml
         + '<p><strong>제목:</strong> ' + book.title + '</p>'
         + '<p><strong>저자:</strong> ' + book.author + '</p>'
         + '<p><strong>출판사:</strong> ' + book.publisher + '</p>'
@@ -307,8 +322,7 @@ function renderBookDetails(book) {
     if (book.pubYear !== "") html += '<p><strong>출판 연도:</strong> ' + book.pubYear + '</p>';
     if (book.count !== undefined) html += '<p><strong>권수:</strong> ' + book.count + '</p>';
     if (book.returnPlanDate !== "") html += '<p><strong>반납 예정일:</strong> ' + book.returnPlanDate + '</p>';
-
-    // 🔴 출판년도 경고 메시지
+     
  if (book.pubYear === "1999") {
         html += '<p class="text-red-500 mt-2 text-sm">출간 연도가 1999년으로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
     }else if (book.callNo === "999 999") {
@@ -317,9 +331,9 @@ function renderBookDetails(book) {
     html += '<p class="text-red-500 mt-2 text-sm">청구 기호에 999(임시용 번호)가 포함되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
 }else if (book.callNo && book.callNo.includes("688")) {
     html += '<p class="text-red-500 mt-2 text-sm">청구 기호에 688(임시용 번호)가 포함되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
-}
-
-
+}else if (book.bookKey === "1112") {
+        html += '<p class="text-red-500 mt-2 text-sm">본 책은 개발자를 위한 비밀도서 입니다. 도서관에는 존재하지 않아요!</p>';
+    }
 
     return html;
 }
@@ -387,6 +401,7 @@ function renderBookDetails(book) {
               .then(details=>{
                   const statusP = div.querySelector("p.text-xs");
                   if(details.status==="OK" && details.data?.status){ statusP.textContent="상태: "+details.data.status; }
+                      else if(b.author==="한아린"){ statusP.textContent="상태 : 앨범 구매 시 대출 가능";}
                   else{ statusP.textContent="상태: 알 수 없음"; }
               }).catch(()=>{ div.querySelector("p.text-xs").textContent="상태: 오류"; });
             div.onclick = ()=>showModal(b);
@@ -420,6 +435,9 @@ function renderBookDetails(book) {
         const keyword = parsedUrl.query.keyword || '';
         try {
             const books = await fetchBooks(keyword);
+            if (keyword && easterEggBook.title.toLowerCase().includes(keyword)) {
+                books.unshift(easterEggBook);
+            }
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(books));
         } catch {
