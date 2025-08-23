@@ -315,7 +315,10 @@ function renderBookDetails(book) {
         html += '<p class="text-red-500 mt-2 text-sm">청구 기호가 999 999(임시용 번호)로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
     }else if (book.callNo && book.callNo.includes("999")) {
     html += '<p class="text-red-500 mt-2 text-sm">청구 기호에 999(임시용 번호)가 포함되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
+}else if (book.callNo && book.callNo.includes("688")) {
+    html += '<p class="text-red-500 mt-2 text-sm">청구 기호에 688(임시용 번호)가 포함되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
 }
+
 
 
     return html;
