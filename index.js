@@ -310,7 +310,7 @@ function renderBookDetails(book) {
 
     // 🔴 출판년도 경고 메시지
  if (book.pubYear === "1999") {
-        html += '<p class="text-red-500 mt-2 text-sm">출간 연도가 1999년으로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
+        html += '<p class="text-red-500 mt-2 text-sm">출판 연도가 1999년(임시용 연도)으로 표기되어 있습니다.<br/>임시용 연도 표기일 경우,<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
     }else if (book.callNo === "999 999") {
         html += '<p class="text-red-500 mt-2 text-sm">청구 기호가 999 999(임시용 번호)로 표기되어 있습니다.<br/>도서관에 없거나 이미 폐기된 책일 수 있습니다.</p>';
     }else if (book.callNo && book.callNo.includes("999")) {
