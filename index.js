@@ -166,21 +166,23 @@ const server = http.createServer(async (req, res) => {
 </div>
 
 <main class="p-4 sm:p-6">
-<div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-<select id="search-type"
-  class="p-3 h-12 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
+<div class="mb-4 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+    <select id="search-type"
+      class="p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
         <option value="normal">일반 검색</option>
         <option value="ai">키워드 검색</option>
     </select>
+    
     <div class="flex-1">
         <div id="normal-search-container" class="flex flex-1 space-x-2">
             <input id="search-input" type="text" placeholder="검색어 입력 후 Enter" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto"> 검색 </button>
+            <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-auto">검색</button>
         </div>
+        
         <div id="ai-search-container" class="hidden flex-col">
             <div class="flex space-x-2 mb-2">
                 <input id="ai-search-input" type="text" placeholder="키워드 입력 후 Enter (최대 5개)" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <button id="ai-search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto"> 검색 </button>
+                <button id="ai-search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-auto">검색</button>
             </div>
             <div id="tags" class="flex flex-wrap overflow-y-auto max-h-[100px]"></div>
         </div>
