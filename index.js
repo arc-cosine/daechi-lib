@@ -133,6 +133,13 @@ const server = http.createServer(async (req, res) => {
         .sidebar { position:fixed; top:0; left:0; width:80%; max-width:320px; height:100%; background:white; padding:16px; transform:translateX(-100%); transition:transform 0.3s ease; }
         @media (min-width:640px) { .sidebar { max-width:400px; } }
         .sidebar.open { transform:translateX(0); }
+        .tag { display:inline-flex; align-items:center; background:#e2e8f0; padding:4px 8px; border-radius:12px; margin:2px; }
+        .tag button { margin-left:6px; font-weight:bold; cursor:pointer; background:none; border:none; color: #4b5563; }
+        .alert { position:fixed; top:16px; left:50%; transform:translateX(-50%); padding:12px 24px; border-radius:8px; z-index:500; opacity:0; transition:opacity 0.3s ease-in-out; }
+        /* 모바일 경고창 너비 조정 */
+        @media (max-width: 639px) { 
+            .alert { width: 90%; }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -159,19 +166,32 @@ const server = http.createServer(async (req, res) => {
 </div>
 
 <main class="p-4 sm:p-6">
-    <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
-        <!-- 검색 -->
-        <div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <input id="search-input" type="text" placeholder="검색어 입력 후 Enter"
-                   class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full">
-            <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto">
-                검색
-            </button>
+<div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+<select id="search-type"
+  class="p-3 h-12 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
+        <option value="normal">일반 검색</option>
+        <option value="ai">키워드 검색</option>
+    </select>
+    <div class="flex-1">
+        <div id="normal-search-container" class="flex flex-1 space-x-2">
+            <input id="search-input" type="text" placeholder="검색어 입력 후 Enter" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <button id="search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto"> 검색 </button>
         </div>
+        <div id="ai-search-container" class="hidden flex-col">
+            <div class="flex space-x-2 mb-2">
+                <input id="ai-search-input" type="text" placeholder="키워드 입력 후 Enter (최대 5개)" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <button id="ai-search-button" class="bg-indigo-600 text-white px-4 py-3 rounded-lg w-full sm:w-auto"> 검색 </button>
+            </div>
+            <div id="tags" class="flex flex-wrap overflow-y-auto max-h-[100px]"></div>
+        </div>
+    </div>
+</div>
 
         <div id="result-count" class="text-sm text-gray-600 mb-3"></div>
         <div id="book-list" class="flex flex-col space-y-4 w-full"></div>
     </div>
+
+    <div id="alert-message" class="alert bg-red-100 text-red-700 border border-red-200"></div>
 
     <div class="mt-8 py-4 text-center">
 <p class="text-gray-400 text-sm opacity-50 select-none">
@@ -184,7 +204,6 @@ const server = http.createServer(async (req, res) => {
         <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">공식 사이트가 아닌, 개인이 만든 사이트입니다.</p>
     </div>
 </main>
-<!-- 모달 -->
 <div id="book-modal" class="modal">
     <div class="modal-content">
         <div class="flex justify-between items-center mb-2">
@@ -215,8 +234,61 @@ const server = http.createServer(async (req, res) => {
         const closeSidebar=document.getElementById('close-sidebar');
         const resultCount=document.getElementById('result-count');
         const headerTitle=document.querySelector('header h1');
+        const searchType = document.getElementById('search-type');
+        const normalSearchContainer = document.getElementById('normal-search-container');
+        const aiSearchContainer = document.getElementById('ai-search-container');
+        const aiSearchInput = document.getElementById('ai-search-input');
+        const aiSearchButton = document.getElementById('ai-search-button');
+        const tagsDiv = document.getElementById('tags');
+        const alertMessage = document.getElementById('alert-message');
         let currentBook=null;
+        let keywords = [];
 
+        function showAlert(message) {
+            alertMessage.textContent = message;
+            alertMessage.style.opacity = '1';
+            setTimeout(() => {
+                alertMessage.style.opacity = '0';
+            }, 3000);
+        }
+
+        searchType.addEventListener('change', (e) => {
+            if (e.target.value === 'ai') {
+                normalSearchContainer.classList.add('hidden');
+                aiSearchContainer.classList.remove('hidden');
+            } else {
+                normalSearchContainer.classList.remove('hidden');
+                aiSearchContainer.classList.add('hidden');
+            }
+        });
+
+        function renderTags(){
+            tagsDiv.innerHTML='';
+            keywords.forEach((kw,i)=>{
+                const span=document.createElement('span');
+                span.className='tag';
+                span.textContent=kw;
+                const btn=document.createElement('button');
+                btn.textContent='×';
+                btn.onclick=()=>{ keywords.splice(i,1); renderTags(); };
+                span.appendChild(btn);
+                tagsDiv.appendChild(span);
+            });
+        }
+
+        aiSearchInput.addEventListener('keypress', e=>{
+            if(e.key==='Enter'){
+                const val=aiSearchInput.value.trim();
+                if(val && keywords.length<5){
+                    keywords.push(val);
+                    aiSearchInput.value='';
+                    renderTags();
+                } else if(val) {
+                    showAlert("키워드는 최대 5개까지 입력할 수 있습니다.");
+                }
+            }
+        });
+        
         function getFavorites(){ return JSON.parse(localStorage.getItem('favorites')||'[]'); }
         function saveFavorites(favs){ localStorage.setItem('favorites',JSON.stringify(favs)); }
         function updateFavoriteBtn(key){
@@ -364,7 +436,7 @@ function renderBookDetails(book) {
     }
   }
 
-  async function performSearch() {
+  async function performNormalSearch() {
     const keyword = searchInput.value.trim();
     if(!keyword) return;
     bookList.innerHTML = '<p>검색 중...</p>';
@@ -396,12 +468,65 @@ function renderBookDetails(book) {
     }
   }
 
-  searchButton.onclick = performSearch;
-  searchInput.addEventListener('keypress', e=>{ if(e.key==='Enter') performSearch(); });
+  async function performAiSearch() {
+    if(keywords.length === 0){
+        showAlert("키워드를 입력하세요.");
+        return;
+    }
+    bookList.innerHTML = '<p>검색 중...</p>';
+    resultCount.textContent = '';
+    try {
+        const res = await fetch('/ai-search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ keywords })
+        });
+        const data = await res.json();
+        bookList.innerHTML = '';
+        if(data.result === 'GG' || data.result.length === 0){
+            bookList.innerHTML = '<p>검색 결과가 없습니다.</p>';
+            resultCount.textContent = '0건 검색 결과';
+            return;
+        }
+        
+        resultCount.textContent = data.result.length + '건 검색 결과';
+        data.result.forEach(b => {
+            const div=document.createElement('div');
+            div.className='book-item p-4 bg-gray-50 rounded-lg shadow-sm cursor-pointer';
+            div.innerHTML='<h2 class="font-semibold">'+b.title+'</h2>'
+                        +'<p class="text-sm">'+b.author+'</p>'
+                        +'<p class="text-xs text-gray-500">상태 불러오는 중...</p>';
+            bookList.appendChild(div);
+            fetch('/book-details?bookKey='+b.bookKey)
+              .then(res=>res.json())
+              .then(details=>{
+                  const statusP = div.querySelector("p.text-xs");
+                  if(details.status==="OK" && details.data?.status){ statusP.textContent="상태: "+details.data.status; }
+                  else{ statusP.textContent="상태: 알 수 없음"; }
+              }).catch(()=>{ div.querySelector("p.text-xs").textContent="상태: 오류"; });
+            div.onclick = ()=>showModal(b);
+        });
+    } catch {
+        bookList.innerHTML='<p class="text-red-500">정확한 검색 실패</p>';
+    }
+  }
+  
+  searchButton.onclick = performNormalSearch;
+  searchInput.addEventListener('keypress', e=>{ if(e.key==='Enter') performNormalSearch(); });
+  aiSearchButton.onclick = performAiSearch;
+
   menuBtn.onclick=()=>{ sidebarOverlay.style.display='block'; setTimeout(()=>sidebar.classList.add('open'),10); };
   closeSidebar.onclick=()=>{ sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); };
   sidebarOverlay.onclick=(e)=>{ if(e.target===sidebarOverlay){ sidebar.classList.remove('open'); setTimeout(()=>sidebarOverlay.style.display='none',300); } };
-  headerTitle.onclick=()=>{ searchInput.value=''; bookList.innerHTML=''; resultCount.textContent=''; loadPopularBooks(); };
+  headerTitle.onclick=()=>{ 
+    searchInput.value=''; 
+    aiSearchInput.value='';
+    keywords = [];
+    renderTags();
+    bookList.innerHTML=''; 
+    resultCount.textContent=''; 
+    loadPopularBooks(); 
+  };
   renderSidebar();
   loadPopularBooks();
 });
@@ -426,6 +551,43 @@ function renderBookDetails(book) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify([]));
         }
+    }
+    else if (parsedUrl.pathname === '/ai-search') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const { keywords } = JSON.parse(body);
+                if(!keywords || keywords.length === 0){
+                    res.writeHead(400); res.end('키워드 없음'); return;
+                }
+
+                // 키워드 조합 생성
+                const combos = [];
+                for(let i=keywords.length;i>0;i--){
+                    const perm = getCombinations(keywords, i);
+                    combos.push(...perm);
+                }
+
+                let allBooks = [];
+                for(let combo of combos){
+                    const keyword = combo.join(' ');
+                    const books = await fetchBooks(keyword);
+                    allBooks.push(...books.map(b => ({...b, _combo: keyword})));
+                }
+
+                // 유사도 기준 정렬
+                allBooks.sort((a,b)=> similarityScore(b.title, keywords) - similarityScore(a.title, keywords));
+
+                const top5 = allBooks.slice(0,5);
+                res.writeHead(200, {'Content-Type':'application/json'});
+                res.end(JSON.stringify({ result: top5.length ? top5 : 'GG' }));
+            } catch(e){
+                console.error(e);
+                res.writeHead(500);
+                res.end(JSON.stringify({ result:'GG' }));
+            }
+        });
     }
 // — API: 상세 정보 —
     else if (parsedUrl.pathname === '/book-details') {
@@ -456,5 +618,23 @@ function renderBookDetails(book) {
         res.end('Not Found');
     }
 });
+function getCombinations(arr, len){
+    if(len===1) return arr.map(x=>[x]);
+    const result = [];
+    arr.forEach((v,i)=>{
+        const rest = arr.slice(i+1);
+        const combos = getCombinations(rest,len-1);
+        combos.forEach(c=>result.push([v,...c]));
+    });
+    return result;
+}
+
+function similarityScore(title, keywords){
+    let score=0;
+    keywords.forEach(k=>{
+        if(title.includes(k)) score++;
+    });
+    return score;
+}
 
 server.listen(3000, () => console.log("서버 실행: http://localhost:3000"));
