@@ -168,7 +168,7 @@ const server = http.createServer(async (req, res) => {
 <main class="p-4 sm:p-6">
 <div class="mb-4 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
     <select id="search-type"
-      class="p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
+      class="p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto" style="display : none">
         <option value="normal">일반 검색</option>
         <option value="ai">키워드 검색</option>
     </select>
