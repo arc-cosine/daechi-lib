@@ -159,12 +159,12 @@ const server = http.createServer(async (req, res) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?G-ZS92TKDW3Z"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'GA_MEASUREMENT_ID', {
+gtag('config', 'G-ZS92TKDW3Z', {
             page_title: '대치초 도서관',
             page_location: window.location.href,
             custom_map: {
@@ -823,7 +823,7 @@ navItems.forEach((item, index) => {
     // 관리자 페이지
     else if (parsedUrl.pathname === '/admin') {
         const password = parsedUrl.query.password;
-        if (password !== '1234') {
+        if (password !== 'murimurievolution') {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`<!DOCTYPE html>
 <html lang="ko">
@@ -833,12 +833,12 @@ navItems.forEach((item, index) => {
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Google Analytics 4 for Admin -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZS92TKDW3Z"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'GA_MEASUREMENT_ID');
+        gtag('config', 'G-ZS92TKDW3Z');
         
         // 관리자 페이지 접근 시도 추적
         gtag('event', 'admin_access_attempt', {
@@ -893,12 +893,12 @@ navItems.forEach((item, index) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Google Analytics 4 for Admin Panel -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZS92TKDW3Z"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'GA_MEASUREMENT_ID');
+        gtag('config', 'G-ZS92TKDW3Z');
         
         // 관리자 페이지 성공적 접근 추적
         gtag('event', 'admin_access_success', {
