@@ -326,12 +326,15 @@ const server = http.createServer(async (req, res) => {
         </div>
         <ul id="recent-favorites" class="space-y-3 text-sm text-gray-700 overflow-y-auto max-h-[70vh]"></ul>
         <div class="mt-4 space-y-2">
-            <button id="random-favorite" class="px-4 py-2 bg-indigo-600 text-white rounded-lg w-full">
+            <button hidden id="random-favorite" class="px-4 py-2 bg-indigo-600 text-white rounded-lg w-full">
                 랜덤 선택하기 🎲
             </button>
-            <button disabled id="library-card-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg w-full">
-                대출증 등록
-            </button>
+            <br />
+            <br />
+            <br />
+          <!--  <button disabled id="library-card-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg w-full">
+                대출증 등록 [준비중]
+            </button> -->
         </div>
     </div>
 </div>
