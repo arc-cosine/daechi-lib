@@ -332,9 +332,9 @@ const server = http.createServer(async (req, res) => {
             <br />
             <br />
             <br />
-          <!--  <button disabled id="library-card-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg w-full">
+            <button hidden disabled id="library-card-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg w-full">
                 대출증 등록 [준비중]
-            </button> -->
+            </button>
         </div>
     </div>
 </div>
