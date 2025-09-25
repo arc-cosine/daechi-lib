@@ -309,13 +309,34 @@ const server = http.createServer(async (req, res) => {
             align-items: center;
             width: 100%;
         }
+        
+        .premium-badge {
+    background: linear-gradient(45deg, #ffd700, #ffed4a);
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.chat-widget {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
     </style>
 </head>
 <body class="bg-gray-100">
 
 <header class="flex items-center justify-center bg-white shadow px-4 py-3 relative">
     <button id="menu-btn" class="text-2xl absolute left-4">☰</button>
-    <h1 class="text-lg sm:text-xl font-bold cursor-pointer">대치초 도서관 통합 검색</h1>
+    <h1 class="text-lg sm:text-xl font-bold cursor-pointer">대치초 도서관 통합 검색</h1> 
 </header>
 
 <div id="sidebar-overlay" class="sidebar-overlay">
@@ -360,13 +381,12 @@ const server = http.createServer(async (req, res) => {
                 Made by 한아린 with 
                 <strong id="heart" style="cursor:pointer;">❤️</strong>
             </p>
-            <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Nanaoakari</del> Koyeb.</p>
+            <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">Web Support by <del>Shigure Ui</del> Koyeb.</p>
             <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">도서는 최대 100권까지 한번에 조회 가능합니다.</p>
             <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">정확하지 않은 정보가 존재할 수 있습니다.</p>
             <p class="text-gray-400 text-sm opacity-50 select-none pointer-events-none">공식 사이트가 아닌, 개인이 만든 사이트입니다.</p>
         </div>
     </div>
-
     <!-- 윤독도서 화면 -->
     <div id="reading-section" class="section">
         <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
@@ -499,6 +519,84 @@ const server = http.createServer(async (req, res) => {
         </div>
     </div>
 </div>
+<!-- 프리미엄 구독 화면 -->
+ <!-- 프리미엄 구독 화면 -->
+    <div id="premium-section" class="section">
+        <div class="container bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md sm:max-w-3xl mx-auto">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold mb-2">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
+                        프리미엄 구독
+                    </span>
+                    👑
+                </h2>
+                <p class="text-gray-600">"무료로" 특별한 혜택을 누려보세요!</p>
+            </div>
+
+            <div class="premium-step">
+                <h3 class="text-lg font-bold mb-3">🕺 1단계: 춤 외우기</h3>
+                <p class="text-sm mb-4">아래 동영상의 춤을 완벽하게 외워주세요.<br />노래는 부르지 않으셔도 됩니다!</p>
+                
+                <div class="dance-video">
+                    <div class="text-center">
+                        <div class="text-4xl mb-2">🎵</div>
+                        <p class="text-white text-sm">춤 동영상</p>
+                        <p class="text-gray-300 text-xs mt-1">[실제 동영상이 들어갈 자리]</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white bg-opacity-20 rounded-lg p-3 mt-3">
+                    <p class="text-xs text-white">최대한 동작을 역동적으로!</p>
+                </div>
+            </div>
+
+            <div class="premium-step">
+                <h3 class="text-lg font-bold mb-3">💬 2단계: 사전 예약</h3>
+                <p class="text-sm mb-4">하단의 채팅창을 통해 방문할 날짜를 미리 알려주세요.</p>
+                
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="text-yellow-300">📅</span>
+                        <span class="font-medium">예약 정보</span>
+                    </div>
+                    <ul class="text-sm space-y-1">
+                        <li>• 장소: 6학년 5반 교실</li>
+                        <li>• 날짜: 본인이 정한 때</li>
+                        <li>• 시간: 12시 40분 (점심시간)</li>
+                        <li>• 준비물: 용기와 자신감!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="premium-step">
+                <h3 class="text-lg font-bold mb-3">🎉 3단계: 춤 공연</h3>
+                <p class="text-sm mb-4">예약한 날짜에 6학년 5반에 와서 배운 춤을 선보여주세요!</p>
+                
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">🏆</div>
+                        <p class="font-medium">성공하면 프리미엄 혜택 즉시 활성화!</p>
+                        <p class="text-xs mt-1">* 춤 실력은 열정으로 평가됩니다</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-lg text-center">
+                <h4 class="font-bold text-gray-800 mb-2">🌟 프리미엄 혜택 미리보기</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>✨ 개인 맞춤 도서 추천 서비스</li>
+                    <li>🎯 도서 위치 확인</li>
+                    <li>and more...</li> 
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<script type="text/javascript">
+(function(cl,i,c,k,m,o,n){m=c;o=cl.referrer;m+='&mon_rf='+encodeURIComponent(o);
+n='<'+i+' type="text/javascript" src="'+m+'"></'+i+'>';cl.writeln(n);
+})(document,'script','https://mtab.clickmon.co.kr/pop/wp_m_icon.php?PopAd=CM_M_1003067%7C%5E%7CCM_A_1123465%7C%5E%7CAdver_M_1046207');
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -558,6 +656,7 @@ const server = http.createServer(async (req, res) => {
                 libraryCardBtn.className = 'px-4 py-2 bg-indigo-600 text-white rounded-lg w-full';
             }
         }
+        
         
         function showLibraryCardModal() {
             // 사이드바 닫기
@@ -1057,7 +1156,17 @@ const server = http.createServer(async (req, res) => {
                 '<p><strong>저자:</strong> ' + (book.author || '저자 정보 없음') + '</p>' +
                 '<p><strong>출판사:</strong> ' + (book.publisher || '출판사 정보 없음') + '</p>' +
                 '<p><strong>ISBN:</strong> ' + (book.isbn || 'ISBN 정보 없음') + '</p>' +
-                '<p><strong>청구기호:</strong> ' + (book.callNo || '검색 기능을 사용하여 조회 가능합니다.') + '</p>' +
+//                 '<p><strong>키워드:</strong> ' + (function() {
+//     console.log('keywordList:', book.keywordList);
+//     console.log('keywordList type:', typeof book.keywordList);
+//     console.log('keywordList isArray:', Array.isArray(book.keywordList));
+//     if (book.keywordList && Array.isArray(book.keywordList) && book.keywordList.length > 0) {
+//         return book.keywordList.slice(0, 5).map(keyword => '#' + keyword).join(' ');
+//     } else {
+//         return '없음 (디버그: ' + JSON.stringify(book.keywordList) + ')';
+//     }
+// })() + '</p>' +
+     '<p><strong>청구기호:</strong> ' + (book.callNo || '검색 기능을 사용하여 조회 가능합니다.') + '</p>' +
                 '<p><strong>상태:</strong> <span class="' + statusColor + '">' + status + '</span></p>';
 
             if (book.pubYear && book.pubYear !== "") html += '<p><strong>출판 연도:</strong> ' + book.pubYear + '</p>';
